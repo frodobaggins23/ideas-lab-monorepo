@@ -1,1 +1,24 @@
+node_modules
+dist
+coverage
+.nx
+.vercel
+.env
+.env.*
+!.env.example
+.playwright-mcp
 .claude-logs
+*.tsbuildinfo
+
+# Sandbox mounts that show up as untracked character devices in the repo root
+/.bash_profile
+/.bashrc
+/.gitconfig
+/.gitmodules
+/.idea
+/.mcp.json.bak
+/.profile
+/.ripgreprc
+/.vscode
+/.zprofile
+/.zshrc

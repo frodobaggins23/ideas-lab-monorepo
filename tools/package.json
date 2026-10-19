@@ -1,0 +1,11 @@
+{
+    "name": "@lab/tools",
+    "private": true,
+    "version": "0.0.0",
+    "type": "module",
+    "scripts": {
+        "typecheck": "tsc --noEmit",
+        "test": "vitest",
+        "test:run": "vitest run"
+    }
+}
