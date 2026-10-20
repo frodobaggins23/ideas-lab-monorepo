@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -14,6 +15,7 @@ export interface CheckResult {
 
 export interface CheckPackagesDeps {
     allowlist: string[];
+    workspaces: string[];
     gather: (spec: string) => Promise<PackageFacts>;
     now: Date;
 }
@@ -22,30 +24,28 @@ function packageName(spec: string): string {
     return /^(@[^/]+\/[^@]+|[^@]+)/.exec(spec)?.[1] ?? spec;
 }
 
-function isPreApproved(spec: string, allowlist: string[]): boolean {
-    const name = packageName(spec);
-    return name.startsWith('@lab/') || allowlist.includes(name);
+function failed(spec: string, failure: string): CheckResult {
+    return { spec, evaluation: { passed: false, failures: [failure], warnings: [] } };
 }
 
 export async function checkPackages(
     specs: string[],
-    { allowlist, gather, now }: CheckPackagesDeps,
+    { allowlist, workspaces, gather, now }: CheckPackagesDeps,
 ): Promise<CheckResult[]> {
     const results: CheckResult[] = [];
 
     for (const spec of specs) {
+        const name = packageName(spec);
+        const isLabScope = name.startsWith('@lab/');
         if (!isRegistrySpec(spec)) {
-            results.push({
-                spec,
-                evaluation: {
-                    passed: false,
-                    failures: [
-                        `"${spec}" does not come from the npm registry and cannot be checked`,
-                    ],
-                    warnings: [],
-                },
-            });
-        } else if (isPreApproved(spec, allowlist)) {
+            results.push(
+                failed(spec, `"${spec}" does not come from the npm registry and cannot be checked`),
+            );
+        } else if (isLabScope && !workspaces.includes(name)) {
+            // The @lab scope is not ours on the public registry: without a local workspace of
+            // that name, npm would download whatever the scope's owner published there.
+            results.push(failed(spec, `"${name}" is not a workspace in this repo`));
+        } else if (isLabScope || allowlist.includes(name)) {
             results.push({ spec, evaluation: { passed: true, failures: [], warnings: [] } });
         } else {
             results.push({ spec, evaluation: evaluatePackage(await gather(spec), now) });
@@ -70,9 +70,15 @@ export function readAllowlist(): string[] {
     return (JSON.parse(readFileSync(file, 'utf8')) as { packages: string[] }).packages;
 }
 
+export function readWorkspaceNames(): string[] {
+    const output = execFileSync('npm', ['query', '.workspace'], { encoding: 'utf8' });
+    return (JSON.parse(output) as { name: string }[]).map((workspace) => workspace.name);
+}
+
 export function checkPackagesWithRegistry(specs: string[]): Promise<CheckResult[]> {
     return checkPackages(specs, {
         allowlist: readAllowlist(),
+        workspaces: readWorkspaceNames(),
         gather: (spec) => gatherPackageFacts(spec, realPackageFactsDeps),
         now: new Date(),
     });

@@ -5,6 +5,7 @@ import type { PackageFacts } from '../evaluatePackage.ts';
 
 const now = new Date('2026-10-19T00:00:00Z');
 const allowlist = ['react', '@tanstack/react-query'];
+const workspaces = ['@lab/ui', '@lab/config'];
 
 const healthy: PackageFacts = {
     name: 'recharts',
@@ -26,16 +27,38 @@ describe('checkPackages', () => {
     ])('skips %s without querying the registry', async (spec) => {
         const gather = vi.fn();
 
-        const [result] = await checkPackages([spec], { allowlist, gather, now });
+        const [result] = await checkPackages([spec], { allowlist, workspaces, gather, now });
 
         expect(result?.evaluation.passed).toBe(true);
         expect(gather).not.toHaveBeenCalled();
     });
 
+    // The @lab scope is not ours on the public registry, so a name without a local workspace
+    // would be downloaded from whoever owns the scope there.
+    it.each(['@lab/evil', '@lab/evil@1.0.0'])(
+        'fails %s when no workspace has that name, without querying the registry',
+        async (spec) => {
+            const gather = vi.fn();
+
+            const [result] = await checkPackages([spec], { allowlist, workspaces, gather, now });
+
+            expect(result?.evaluation.passed).toBe(false);
+            expect(result?.evaluation.failures).toEqual([
+                expect.stringMatching(/not a workspace in this repo/),
+            ]);
+            expect(gather).not.toHaveBeenCalled();
+        },
+    );
+
     it('fails a non-registry source without querying the registry', async () => {
         const gather = vi.fn();
 
-        const [result] = await checkPackages(['github:owner/repo'], { allowlist, gather, now });
+        const [result] = await checkPackages(['github:owner/repo'], {
+            allowlist,
+            workspaces,
+            gather,
+            now,
+        });
 
         expect(result?.evaluation.passed).toBe(false);
         expect(result?.evaluation.failures).toEqual([expect.stringMatching(/npm registry/)]);
@@ -45,7 +68,7 @@ describe('checkPackages', () => {
     it('evaluates an unlisted registry package from its gathered facts', async () => {
         const gather = vi.fn(async () => ({ ...healthy, weeklyDownloads: 10 }));
 
-        const [result] = await checkPackages(['recharts'], { allowlist, gather, now });
+        const [result] = await checkPackages(['recharts'], { allowlist, workspaces, gather, now });
 
         expect(gather).toHaveBeenCalledWith('recharts');
         expect(result?.evaluation.passed).toBe(false);
