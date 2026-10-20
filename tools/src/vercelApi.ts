@@ -16,6 +16,7 @@ export interface VercelDeployment {
     id: string;
     url: string;
     readyState: VercelDeploymentState;
+    meta?: { githubCommitSha?: string };
 }
 
 export interface VercelDeploymentEvent {
