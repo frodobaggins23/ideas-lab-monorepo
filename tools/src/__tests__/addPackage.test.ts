@@ -61,6 +61,37 @@ describe('addPackages', () => {
         expect(await addPackages(['a'], deps)).toBe(3);
     });
 
+    it.each([
+        { flags: ['--save-dev', '-w', '@lab/x'] },
+        { flags: ['-D', '--workspace', '@lab/x'] },
+        { flags: ['--workspace=@lab/x'] },
+    ])('accepts the allowed flags $flags', async ({ flags }) => {
+        const { deps } = setup([pass('date-fns')]);
+
+        const code = await addPackages(['date-fns', ...flags], deps);
+
+        expect(code).toBe(0);
+        expect(deps.check).toHaveBeenCalledWith(['date-fns']);
+    });
+
+    // Any other flag could change where or how npm installs (e.g. a different registry), which
+    // the check would not see.
+    it.each([
+        { args: ['react', '--registry=https://evil.example'] },
+        { args: ['react', '--registry', 'https://evil.example'] },
+        { args: ['react', '--ignore-scripts=false'] },
+        { args: ['react', '--prefix', '/tmp/x'] },
+        { args: ['react', '--force'] },
+        { args: ['react', '-w'] },
+        { args: ['react', '-w', '--registry=https://evil.example'] },
+    ])('rejects $args and installs nothing', async ({ args }) => {
+        const { deps } = setup([pass('react')]);
+
+        await expect(addPackages(args, deps)).rejects.toThrowError(/Usage/);
+        expect(deps.check).not.toHaveBeenCalled();
+        expect(deps.install).not.toHaveBeenCalled();
+    });
+
     it('rejects a call that names no package and installs nothing', async () => {
         const { deps } = setup([]);
 

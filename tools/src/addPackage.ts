@@ -3,12 +3,39 @@ import { pathToFileURL } from 'node:url';
 
 import type { CheckResult } from './checkPackage.ts';
 import { checkPackagesWithRegistry, formatReport } from './checkPackage.ts';
-import { extractInstallPackages } from './npmCommand.ts';
 
 export interface AddPackagesDeps {
     check: (specs: string[]) => Promise<CheckResult[]>;
     install: (args: string[]) => Promise<number>;
     log: (line: string) => void;
+}
+
+const usage = 'Usage: npm run lab:add -- <package[@range]>... [-D] [-w <workspace>]';
+
+// Only flags that cannot change where or how npm installs are allowed: anything else (such as
+// `--registry`) could install something other than what the check looked at.
+function extractSpecs(args: string[]): string[] {
+    const specs: string[] = [];
+    for (let index = 0; index < args.length; index++) {
+        const arg = args[index] ?? '';
+        if (arg === '-D' || arg === '--save-dev' || arg.startsWith('--workspace=')) {
+            continue;
+        }
+        if (arg === '-w' || arg === '--workspace') {
+            // npm does not take a value starting with `-`, so it would parse it as another flag.
+            const workspace = args[index + 1];
+            if (workspace === undefined || workspace.startsWith('-')) {
+                throw new Error(usage);
+            }
+            index++;
+            continue;
+        }
+        if (arg.startsWith('-')) {
+            throw new Error(`${usage}\nFlag "${arg}" is not allowed.`);
+        }
+        specs.push(arg);
+    }
+    return specs;
 }
 
 // `npm run lab:add` installs only packages that pass the dependency check. There is deliberately
@@ -17,9 +44,9 @@ export async function addPackages(
     args: string[],
     { check, install, log }: AddPackagesDeps,
 ): Promise<number> {
-    const specs = extractInstallPackages(`npm install ${args.join(' ')}`);
+    const specs = extractSpecs(args);
     if (specs.length === 0) {
-        throw new Error('Usage: npm run lab:add -- <package[@range]>... [-D] [-w <workspace>]');
+        throw new Error(usage);
     }
 
     const results = await check(specs);
