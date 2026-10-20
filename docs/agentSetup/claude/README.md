@@ -21,9 +21,11 @@ Also in `~/.claude/settings.json`:
 
 ## Dependency gate
 
-Agents add packages through `npm run lab:add`, which checks a package before installing it. Three
-`deny` permission rules in `settings.json` make that the only way: `Bash(npm install *)`,
-`Bash(npm i *)` and `Bash(npm add *)` (a bare `npm install` is denied too; `npm ci` is not).
+Agents add packages through `npm run lab:add`, which checks a package before installing it. The
+`deny` permission rules in `settings.json` block a direct `npm install` and npm's built-in aliases
+for it (`i`, `add`, `in` … `isntall`, `it`, `install-test`); a bare `npm install` is denied too,
+`npm ci` is not. They match the command text, so they stop accidental retries, not deliberate
+rephrasing such as a flag before the subcommand.
 
 There is no override. When a check fails nothing is installed, the agent reports why, and you
 decide: if you accept the risk, run the command it prints in your own terminal, outside the sandbox

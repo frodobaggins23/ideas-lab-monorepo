@@ -4,6 +4,21 @@
     },
     "permissions": {
         "allow": ["mcp__playwright"],
-        "deny": ["Bash(npm install *)", "Bash(npm i *)", "Bash(npm add *)"]
+        "deny": [
+            "Bash(npm install *)",
+            "Bash(npm i *)",
+            "Bash(npm add *)",
+            "Bash(npm in *)",
+            "Bash(npm ins *)",
+            "Bash(npm inst *)",
+            "Bash(npm insta *)",
+            "Bash(npm instal *)",
+            "Bash(npm isnt *)",
+            "Bash(npm isnta *)",
+            "Bash(npm isntal *)",
+            "Bash(npm isntall *)",
+            "Bash(npm it *)",
+            "Bash(npm install-test *)"
+        ]
     }
 }
