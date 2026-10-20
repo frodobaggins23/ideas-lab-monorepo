@@ -84,11 +84,11 @@ describe('evaluatePackage', () => {
         expect(result.failures).toEqual([expect.stringMatching(/signature/i)]);
     });
 
-    it('warns about install scripts without blocking', () => {
+    it('fails a package whose dependency tree runs install scripts', () => {
         const result = evaluatePackage({ ...healthy, hasInstallScripts: true }, now);
 
-        expect(result.passed).toBe(true);
-        expect(result.warnings).toEqual([expect.stringMatching(/install script/i)]);
+        expect(result.passed).toBe(false);
+        expect(result.failures).toEqual([expect.stringMatching(/install script/i)]);
     });
 
     it('reports every failure at once', () => {

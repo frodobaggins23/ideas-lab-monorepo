@@ -86,9 +86,12 @@ discoverable (sitemaps, canonical or Open Graph URLs for search).
 - **Add packages only with `npm run lab:add -- <package[@range]> [-D] [-w <workspace>]`.** It
   checks the package and installs it (exact version) only if the check passes. The check requires
   at least 100k weekly downloads, a release within 12 months, no deprecation, no high or critical
-  `npm audit` findings and valid registry signatures in a dry-run install. Direct
-  `npm install|i|add <package>` is denied by a permission rule. `npm run lab:check-package --
-<package>` runs the check alone.
+  `npm audit` findings, valid registry signatures and no install scripts in the dependency tree,
+  checked in a dry-run install. Direct `npm install|i|add <package>` is denied by a permission
+  rule. `npm run lab:check-package -- <package>` runs the check alone.
+- **Install scripts of dependencies are blocked by npm itself** (`strict-allow-scripts` in the
+  root `.npmrc`): one not listed in `allowScripts` in the root `package.json` fails the install.
+  Only the user approves one (`npm install-scripts approve <pkg>`) or bypasses the policy.
 - **There is no override. When `lab:add` fails, nothing is installed and only the user can
   install the package**, outside the sandbox:
     1. Do not try another way to install that package.

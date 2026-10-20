@@ -73,7 +73,7 @@ export function evaluatePackage(facts: PackageFacts, now: Date): Evaluation {
     }
 
     if (facts.hasInstallScripts) {
-        warnings.push(
+        failures.push(
             'The package or its dependencies run install scripts (possibly a native build)',
         );
     }
