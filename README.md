@@ -33,6 +33,19 @@ npm run prepare  # installs Git hooks (Husky)
 
 Use `npx nx affected -t <target>` to run a target only for projects changed since `main`.
 
+### Lab scripts
+
+| Command                                   | What it does                                            |
+| ----------------------------------------- | ------------------------------------------------------- |
+| `npm run lab:new-app -- <appName>`        | Scaffold `apps/<appName>` from `tools/templates/app`    |
+| `npm run lab:vercel-project -- <appName>` | Create the app's Vercel project (needs `VERCEL_TOKEN`)  |
+| `npm run lab:check-package -- <package>`  | Check a package against the dependency policy           |
+| `npm run lab:add -- <package> [-w <ws>]`  | Check a package and install it only if the check passes |
+
+`<appName>` is camelCase, for example `budgetBuddy`. To run an app on your own machine use
+`npm run dev -w @lab/<kebab-name>`. Agent setup (settings, skills, token) is described in
+`docs/agentSetup/`.
+
 ## Running Nx in the Claude Code sandbox
 
 Nx plugin workers need Unix sockets, which the sandbox blocks. Set `NX_ISOLATE_PLUGINS=false`

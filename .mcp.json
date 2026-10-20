@@ -1,0 +1,19 @@
+{
+    "mcpServers": {
+        "playwright": {
+            "command": "npx",
+            "args": [
+                "@playwright/mcp@0.0.83",
+                "--browser",
+                "chrome",
+                "--headless",
+                "--isolated",
+                "--allowed-origins",
+                "http://localhost:*;http://127.0.0.1:*;https://*.vercel.app",
+                "--block-service-workers",
+                "--output-dir",
+                ".playwright-mcp"
+            ]
+        }
+    }
+}

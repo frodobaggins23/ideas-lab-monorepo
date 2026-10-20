@@ -3,3 +3,4 @@ coverage
 node_modules
 .nx
 package-lock.json
+.preview

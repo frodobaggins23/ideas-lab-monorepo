@@ -1,0 +1,9 @@
+{
+    "env": {
+        "NX_ISOLATE_PLUGINS": "false"
+    },
+    "permissions": {
+        "allow": ["mcp__playwright"],
+        "deny": ["Bash(npm install *)", "Bash(npm i *)", "Bash(npm add *)"]
+    }
+}
