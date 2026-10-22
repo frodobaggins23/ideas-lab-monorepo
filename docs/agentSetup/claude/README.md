@@ -68,9 +68,10 @@ never force-push" no longer depends on the agent following instructions.
   sandboxed commands (tested 2026-10-22).
 - A `Read(**/.env.*)` deny rule wins over any `allow` rule, `Read(**/.env.example)` included.
   That is why env templates are named `env.example` and every `.env*` file is gitignored.
-- Hooks in `settings.json` and `settings.local.json` run outside the sandbox. Never point a hook at
-  a script inside the repo: the agent can write there, so it could run its own code unsandboxed.
-  Put hook scripts in `~/.claude/hooks/`.
+- Hooks in `settings.json` and `settings.local.json` run outside the sandbox. Only point a hook at
+  a script the agent cannot write: `.claude/hooks/` in the repo (write-protected for the sandbox
+  and by `Edit(/.claude/**)`) or `~/.claude/hooks/`. A script anywhere else in the repo would let
+  the agent run its own code unsandboxed.
 
 ## Vercel dashboard
 
