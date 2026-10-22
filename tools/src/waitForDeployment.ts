@@ -16,11 +16,13 @@ export interface WaitOptions {
     sleep: (ms: number) => Promise<void>;
     intervalMs: number;
     maxAttempts: number;
+    maxAttemptsWithoutDeployment: number;
 }
 
 export type DeploymentOutcome =
     | { state: 'READY'; url: string }
     | { state: 'ERROR' | 'CANCELED'; url: string; log: string[] }
+    | { state: 'NO_DEPLOYMENT' }
     | { state: 'TIMEOUT' };
 
 // Right after a push the branch's latest deployment can still be the previous commit's, so wait
@@ -28,7 +30,7 @@ export type DeploymentOutcome =
 export async function waitForDeployment(
     client: VercelClient,
     { appName, branch, commitSha }: WaitForDeploymentInput,
-    { sleep, intervalMs, maxAttempts }: WaitOptions,
+    { sleep, intervalMs, maxAttempts, maxAttemptsWithoutDeployment }: WaitOptions,
 ): Promise<DeploymentOutcome> {
     const { vercelProject } = deriveAppNames(appName);
     const project = await client.getProject(vercelProject);
@@ -40,6 +42,11 @@ export async function waitForDeployment(
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         const deployment = await client.getLatestDeployment(project.id, branch);
+        // Vercel deploys only pushes made after the project exists, so a branch with no
+        // deployment at all will not get one by waiting.
+        if (!deployment && attempt >= maxAttemptsWithoutDeployment) {
+            return { state: 'NO_DEPLOYMENT' };
+        }
         if (deployment?.meta?.githubCommitSha === commitSha) {
             const url = `https://${deployment.url}`;
             if (deployment.readyState === 'READY') {
@@ -74,11 +81,22 @@ async function main(): Promise<number> {
     const outcome = await waitForDeployment(
         client,
         { appName, branch: git('branch', '--show-current'), commitSha: git('rev-parse', 'HEAD') },
-        { sleep: (ms) => setTimeout(ms), intervalMs: 10_000, maxAttempts: 90 },
+        {
+            sleep: (ms) => setTimeout(ms),
+            intervalMs: 10_000,
+            maxAttempts: 90,
+            maxAttemptsWithoutDeployment: 18,
+        },
     );
     if (outcome.state === 'READY') {
         process.stdout.write(`READY ${outcome.url}\n`);
         return 0;
+    }
+    if (outcome.state === 'NO_DEPLOYMENT') {
+        process.stdout.write(
+            'NO_DEPLOYMENT this branch has no deployment after 3 minutes. Vercel only deploys pushes made after the project exists: run npm run lab:vercel-project, then push again.\n',
+        );
+        return 1;
     }
     if (outcome.state === 'TIMEOUT') {
         process.stdout.write('TIMEOUT no finished deployment of this commit after 15 minutes\n');

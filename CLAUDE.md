@@ -68,7 +68,9 @@ discoverable (sitemaps, canonical or Open Graph URLs for search).
 
 - **Override of "never commit or push unless asked":** the agent may, without asking, create a
   branch `feat/<appName>` or `fix/<appName>-<topic>`, commit there (Conventional Commits, hooks
-  must pass), push that branch and open a **draft** PR with `gh`.
+  must pass), push that branch and open a **draft** PR with `gh`. Push only with
+  `npm run lab:push`: `git push` cannot authenticate from the sandbox, and fetching stays with
+  the user (see `docs/agentSetup/claude/README.md`).
 - Still forbidden without being asked: committing to `main`, force-push, `--no-verify`, merging or
   closing PRs, deleting branches.
 - PR title is a Conventional Commit. PR body: the idea in a few lines, the preview URL, which checks
@@ -119,9 +121,13 @@ integration from `apps/<appName>`. Previews are public. Create the project with
   token format on the client and rejects the placeholder before sending anything. The REST API
   works with the placeholder. Setup notes: `docs/agentSetup/vercel.md`.
 - **The helper is deliberately minimal and must be maintained.** It only covers deploying an app:
-  check a project exists, create it, make previews public, read the latest deployment of a
-  branch, read build events. It pins endpoint versions in the path (`/v9`, `/v11`, ...). When
-  Vercel changes or retires one, update the helper and its tests.
+  check a project exists, create it, make previews public, keep its ignore-build command current,
+  read the latest deployment of a branch, list recent deployments, read build events. It pins
+  endpoint versions in the path (`/v9`, `/v11`, ...). When Vercel changes or retires one, update
+  the helper and its tests.
+- **To see what Vercel did, run `npm run lab:vercel-status -- <appName>`**: recent deployments with
+  commit, state and error, plus the end of the build log when the newest one failed. Do not query
+  the API by hand for this.
 - **Do not grow it speculatively.** Add an API call only when the deploy flow needs it, with a
   test first.
 - **Any other Vercel operation (anything the CLI does that the helper does not, such as deleting a
@@ -138,8 +144,10 @@ integration from `apps/<appName>`. Previews are public. Create the project with
   cannot create Unix sockets in the sandbox.
 - Node's `fetch` ignores the sandbox proxy. Run scripts that call the network with
   `NODE_USE_ENV_PROXY=1` (the `lab:*` npm scripts already do).
-- Existing `.env*` files are masked and unreadable. Template env files are stored as `env.example`
-  and written out as `.env.example`.
+- **Override of "provide `.env.example`":** env templates are named `env.example` (no leading dot),
+  in the repo root and in every app. The sandbox replaces every `.env*` file with an empty device,
+  and a tracked one breaks git (status, stash, checkout and the commit hook), so all `.env*` files
+  are gitignored and none may be tracked. Real values go in `.env.local`.
 - Each sandboxed command has a private loopback, so a server started in the sandbox cannot be
   reached by the Playwright MCP browser (which runs outside it). To inspect an app locally, build
   it into the fixed folder `.preview` (`npm run build -w @lab/<kebab-name> -- --outDir

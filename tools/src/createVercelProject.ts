@@ -8,7 +8,7 @@ import { createVercelClient } from './vercelApi.ts';
 // Exit 0 skips the build, exit 1 builds. Builds when there is no previous deployment, and
 // otherwise only when the app, the shared libs or the dependency lockfile changed.
 export const ignoreBuildCommand =
-    '[ -z "$VERCEL_GIT_PREVIOUS_SHA" ] || git diff --quiet "$VERCEL_GIT_PREVIOUS_SHA" HEAD -- . ../../libs ../../package-lock.json ../../tsconfig.base.json';
+    '[ -n "$VERCEL_GIT_PREVIOUS_SHA" ] && git diff --quiet "$VERCEL_GIT_PREVIOUS_SHA" HEAD -- . ../../libs ../../package-lock.json ../../tsconfig.base.json';
 
 export interface EnsureLabProjectInput {
     appName: string;
@@ -28,6 +28,7 @@ export async function ensureLabProject(
 
     const existing = await client.getProject(names.vercelProject);
     if (existing) {
+        await client.updateIgnoreBuildCommand(existing.id, ignoreBuildCommand);
         return { created: false, project: existing };
     }
 

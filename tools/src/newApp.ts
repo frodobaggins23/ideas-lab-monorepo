@@ -16,11 +16,6 @@ function toTitle(appName: string): string {
     return `${spaced.charAt(0).toUpperCase()}${spaced.slice(1)}`;
 }
 
-// Env files are stored without the leading dot: the Claude Code sandbox cannot read `.env*` files.
-function renameTemplateFile(relativePath: string): string {
-    return relativePath === 'env.example' ? '.env.example' : relativePath;
-}
-
 export function scaffoldApp({ appName, root, templateDir }: ScaffoldAppInput): string {
     const names = deriveAppNames(appName);
     const targetDir = join(root, names.directory);
@@ -35,12 +30,13 @@ export function scaffoldApp({ appName, root, templateDir }: ScaffoldAppInput): s
 
     const entries = readdirSync(templateDir, { recursive: true, withFileTypes: true });
     for (const entry of entries) {
+        // Real env files are never copied; the template for one is `env.example`.
         if (!entry.isFile() || entry.name.startsWith('.env')) {
             continue;
         }
         const sourcePath = join(entry.parentPath, entry.name);
         const relativePath = sourcePath.slice(templateDir.length + 1);
-        const targetPath = join(targetDir, renameTemplateFile(relativePath));
+        const targetPath = join(targetDir, relativePath);
 
         let content = readFileSync(sourcePath, 'utf8');
         for (const [placeholder, value] of Object.entries(replacements)) {

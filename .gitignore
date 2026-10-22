@@ -3,9 +3,7 @@ dist
 coverage
 .nx
 .vercel
-.env
-.env.*
-!.env.example
+.env*
 .playwright-mcp
 .claude-logs
 *.tsbuildinfo
@@ -22,4 +20,9 @@ coverage
 /.vscode
 /.zprofile
 /.zshrc
+# Claude Code local state. Other .claude/ paths (agents, hooks, commands, ...) are meant to be
+# shared; until one exists, the sandbox shows a placeholder for it as untracked, which git refuses
+# to add.
+/.claude/scheduled_tasks.json
+.cc-writes
 .preview

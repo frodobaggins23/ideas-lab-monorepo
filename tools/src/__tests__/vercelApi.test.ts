@@ -91,9 +91,19 @@ describe('createVercelClient', () => {
     });
 
     it('returns the latest deployment of a branch, or undefined when there is none', async () => {
+        // Shape of a real /v6/deployments item: the id field is called `uid` there.
         const { calls, fetchFn } = setup([
             jsonResponse({
-                deployments: [{ id: 'dpl_1', url: 'a.vercel.app', readyState: 'READY' }],
+                deployments: [
+                    {
+                        uid: 'dpl_1',
+                        name: 'lab-budget-buddy',
+                        url: 'a.vercel.app',
+                        state: 'CANCELED',
+                        readyState: 'CANCELED',
+                        meta: { githubCommitSha: 'abc123', githubCommitRef: 'feat/budgetBuddy' },
+                    },
+                ],
             }),
             jsonResponse({ deployments: [] }),
         ]);
@@ -102,11 +112,80 @@ describe('createVercelClient', () => {
         const latest = await client.getLatestDeployment('prj_1', 'feat/budgetBuddy');
         const none = await client.getLatestDeployment('prj_1', 'feat/other');
 
-        expect(latest?.id).toBe('dpl_1');
+        expect(latest).toEqual({
+            id: 'dpl_1',
+            url: 'a.vercel.app',
+            readyState: 'CANCELED',
+            meta: { githubCommitSha: 'abc123' },
+        });
         expect(none).toBeUndefined();
         expect(calls[0]?.url).toBe(
             'https://api.vercel.com/v6/deployments?projectId=prj_1&branch=feat%2FbudgetBuddy&limit=1',
         );
+    });
+
+    it('updates the ignore-build-step command on an existing project', async () => {
+        const { calls, fetchFn } = setup([jsonResponse({ id: 'prj_1' })]);
+        const client = createVercelClient({ token: 't', fetchFn });
+
+        await client.updateIgnoreBuildCommand('prj_1', 'npx nx ...');
+
+        expect(calls[0]?.init.method).toBe('PATCH');
+        expect(calls[0]?.url).toBe('https://api.vercel.com/v9/projects/prj_1');
+        expect(JSON.parse(String(calls[0]?.init.body))).toEqual({
+            commandForIgnoringBuildStep: 'npx nx ...',
+        });
+    });
+
+    it('lists the most recent deployments of a project across branches', async () => {
+        const { calls, fetchFn } = setup([
+            jsonResponse({
+                deployments: [
+                    {
+                        uid: 'dpl_2',
+                        url: 'b.vercel.app',
+                        created: 1792560422750,
+                        readyState: 'ERROR',
+                        errorMessage: 'Command "npx nx build x" exited with 1',
+                        meta: { githubCommitSha: 'def456', githubCommitRef: 'feat/a' },
+                    },
+                    {
+                        uid: 'dpl_1',
+                        url: 'a.vercel.app',
+                        created: 1792533238934,
+                        readyState: 'READY',
+                        meta: { githubCommitSha: 'abc123', githubCommitRef: 'main' },
+                    },
+                ],
+            }),
+        ]);
+        const client = createVercelClient({ token: 't', fetchFn });
+
+        const deployments = await client.listDeployments('prj_1', 10);
+
+        expect(calls[0]?.url).toBe(
+            'https://api.vercel.com/v6/deployments?projectId=prj_1&limit=10',
+        );
+        expect(deployments).toEqual([
+            {
+                id: 'dpl_2',
+                url: 'b.vercel.app',
+                readyState: 'ERROR',
+                createdAt: 1792560422750,
+                branch: 'feat/a',
+                errorMessage: 'Command "npx nx build x" exited with 1',
+                meta: { githubCommitSha: 'def456' },
+            },
+            {
+                id: 'dpl_1',
+                url: 'a.vercel.app',
+                readyState: 'READY',
+                createdAt: 1792533238934,
+                branch: 'main',
+                errorMessage: undefined,
+                meta: { githubCommitSha: 'abc123' },
+            },
+        ]);
     });
 
     it('fetches build events for a deployment', async () => {

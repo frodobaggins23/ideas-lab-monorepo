@@ -19,6 +19,22 @@ export interface VercelDeployment {
     meta?: { githubCommitSha?: string };
 }
 
+export interface VercelDeploymentSummary extends VercelDeployment {
+    createdAt: number;
+    branch?: string;
+    errorMessage?: string;
+}
+
+// The deployment list endpoint names the id `uid`, unlike the other endpoints.
+interface RawDeployment {
+    uid: string;
+    url: string;
+    created: number;
+    readyState: VercelDeploymentState;
+    errorMessage?: string;
+    meta?: { githubCommitSha?: string; githubCommitRef?: string };
+}
+
 export interface VercelDeploymentEvent {
     type: string;
     text?: string;
@@ -54,7 +70,9 @@ export interface VercelClient {
     getProject(idOrName: string): Promise<VercelProject | undefined>;
     createProject(input: CreateProjectInput): Promise<VercelProject>;
     makePreviewsPublic(projectId: string): Promise<void>;
+    updateIgnoreBuildCommand(projectId: string, command: string): Promise<void>;
     getLatestDeployment(projectId: string, branch: string): Promise<VercelDeployment | undefined>;
+    listDeployments(projectId: string, limit: number): Promise<VercelDeploymentSummary[]>;
     getDeploymentEvents(deploymentId: string): Promise<VercelDeploymentEvent[]>;
 }
 
@@ -119,13 +137,43 @@ export function createVercelClient(options: VercelClientOptions): VercelClient {
                 ssoProtection: null,
             });
         },
+        async updateIgnoreBuildCommand(projectId, command) {
+            await request('PATCH', `/v9/projects/${encodeURIComponent(projectId)}`, undefined, {
+                commandForIgnoringBuildStep: command,
+            });
+        },
         async getLatestDeployment(projectId, branch) {
-            const { deployments } = await request<{ deployments: VercelDeployment[] }>(
+            const { deployments } = await request<{ deployments: RawDeployment[] }>(
                 'GET',
                 '/v6/deployments',
                 { projectId, branch, limit: '1' },
             );
-            return deployments[0];
+            const latest = deployments[0];
+            if (!latest) {
+                return undefined;
+            }
+            return {
+                id: latest.uid,
+                url: latest.url,
+                readyState: latest.readyState,
+                meta: { githubCommitSha: latest.meta?.githubCommitSha },
+            };
+        },
+        async listDeployments(projectId, limit) {
+            const { deployments } = await request<{ deployments: RawDeployment[] }>(
+                'GET',
+                '/v6/deployments',
+                { projectId, limit: String(limit) },
+            );
+            return deployments.map((deployment) => ({
+                id: deployment.uid,
+                url: deployment.url,
+                readyState: deployment.readyState,
+                createdAt: deployment.created,
+                branch: deployment.meta?.githubCommitRef,
+                errorMessage: deployment.errorMessage,
+                meta: { githubCommitSha: deployment.meta?.githubCommitSha },
+            }));
         },
         getDeploymentEvents(deploymentId) {
             return request<VercelDeploymentEvent[]>(

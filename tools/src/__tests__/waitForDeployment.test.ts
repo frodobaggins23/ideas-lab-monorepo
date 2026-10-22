@@ -35,7 +35,12 @@ function fakeClient(
     };
 }
 
-const options = { sleep: vi.fn(async () => {}), intervalMs: 10, maxAttempts: 5 };
+const options = {
+    sleep: vi.fn(async () => {}),
+    intervalMs: 10,
+    maxAttempts: 5,
+    maxAttemptsWithoutDeployment: 3,
+};
 
 describe('waitForDeployment', () => {
     it('returns the preview URL once the deployment of the commit is ready', async () => {
@@ -86,12 +91,21 @@ describe('waitForDeployment', () => {
     });
 
     it('gives up after the maximum number of attempts', async () => {
-        const client = fakeClient([]);
+        const client = fakeClient(Array.from({ length: 5 }, () => deployment('READY', 'older')));
 
         const outcome = await waitForDeployment(client, input, options);
 
         expect(outcome).toEqual({ state: 'TIMEOUT' });
         expect(client.getLatestDeployment).toHaveBeenCalledTimes(5);
+    });
+
+    it('stops early when the branch has no deployment at all', async () => {
+        const client = fakeClient([]);
+
+        const outcome = await waitForDeployment(client, input, options);
+
+        expect(outcome).toEqual({ state: 'NO_DEPLOYMENT' });
+        expect(client.getLatestDeployment).toHaveBeenCalledTimes(3);
     });
 
     it('fails when the Vercel project does not exist yet', async () => {

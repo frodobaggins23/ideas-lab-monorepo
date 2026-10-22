@@ -21,6 +21,8 @@
         "prepare": "husky",
         "lab:vercel-project": "NODE_USE_ENV_PROXY=1 node tools/src/createVercelProject.ts",
         "lab:deployment": "NODE_USE_ENV_PROXY=1 node tools/src/waitForDeployment.ts",
+        "lab:vercel-status": "NODE_USE_ENV_PROXY=1 node tools/src/vercelStatus.ts",
+        "lab:push": "sh .husky/pre-push && NODE_USE_ENV_PROXY=1 node tools/src/pushBranch.ts",
         "lab:new-app": "node tools/src/newApp.ts",
         "lab:check-package": "NODE_USE_ENV_PROXY=1 node tools/src/checkPackage.ts",
         "lab:add": "NODE_USE_ENV_PROXY=1 node tools/src/addPackage.ts"

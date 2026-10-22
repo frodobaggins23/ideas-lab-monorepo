@@ -9,7 +9,7 @@ Input: an idea in a sentence or two. Read the root `CLAUDE.md` first; its rules 
 
 1. **Name it.** Pick a short camelCase `appName` (for example `budgetBuddy`). If the idea is too vague
    to build anything, ask one focused question. Otherwise do not ask: assume and record assumptions.
-2. **Scaffold.** `npm run lab:new-app -- <appName>`, then `npm install`.
+2. **Scaffold.** `npm run lab:new-app -- <appName>`. It also registers the app in the lockfile.
 3. **Build the first version.** A clickable, single-purpose prototype of the core idea in one or two
    screens. Mock or local data only (Zustand or `localStorage`). No backend, auth, database,
    analytics or LLM calls. Mobile-friendly. Use `@lab/ui` and Tailwind. Replace the starter screen
