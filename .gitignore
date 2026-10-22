@@ -20,14 +20,9 @@ coverage
 /.vscode
 /.zprofile
 /.zshrc
-/.claude/agents
-/.claude/commands
-/.claude/hooks
-/.claude/launch.json
-/.claude/loop.md
-/.claude/output-styles
-/.claude/routines
+# Claude Code local state. Other .claude/ paths (agents, hooks, commands, ...) are meant to be
+# shared; until one exists, the sandbox shows a placeholder for it as untracked, which git refuses
+# to add.
 /.claude/scheduled_tasks.json
-/.claude/workflows
 .cc-writes
 .preview
