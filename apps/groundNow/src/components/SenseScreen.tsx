@@ -1,11 +1,11 @@
 import { Button } from '@lab/ui';
 import { type CSSProperties, type Dispatch, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { FILL_MS, fillDelayMs, SETTLE_MS } from '@/grounding/animation';
 import { getSense, SENSES } from '@/grounding/senses';
 import type { SessionAction, SessionState } from '@/grounding/session';
-import { useI18n } from '@/i18n/context';
 
 interface SenseScreenProps {
     state: SessionState;
@@ -17,9 +17,8 @@ function prefersReducedMotion(): boolean {
 }
 
 export function SenseScreen({ state, dispatch }: SenseScreenProps): React.JSX.Element {
-    const { t } = useI18n();
+    const { t } = useTranslation();
     const sense = getSense(state.senseIndex);
-    const text = t.senses[sense.id];
     const isLast = state.senseIndex === SENSES.length - 1;
     const [settled, setSettled] = useState(false);
 
@@ -33,7 +32,11 @@ export function SenseScreen({ state, dispatch }: SenseScreenProps): React.JSX.El
         return () => window.clearTimeout(timer);
     }, [state.completed]);
 
-    const status = !state.completed ? t.sense.hint : settled ? t.sense.settled : t.sense.breathing;
+    const status = !state.completed
+        ? t('sense.hint')
+        : settled
+          ? t('sense.settled')
+          : t('sense.breathing');
 
     return (
         <main
@@ -45,11 +48,14 @@ export function SenseScreen({ state, dispatch }: SenseScreenProps): React.JSX.El
                     onClick={() => dispatch({ type: 'back' })}
                     className="-ml-2 rounded-full px-3 py-2 text-sm font-medium text-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-500"
                 >
-                    {t.sense.back}
+                    {t('sense.back')}
                 </button>
                 <ol
                     className="flex gap-1.5"
-                    aria-label={t.sense.step(state.senseIndex + 1, SENSES.length)}
+                    aria-label={t('sense.step', {
+                        current: state.senseIndex + 1,
+                        total: SENSES.length,
+                    })}
                 >
                     {SENSES.map((item, index) => (
                         <li
@@ -70,17 +76,22 @@ export function SenseScreen({ state, dispatch }: SenseScreenProps): React.JSX.El
                 </p>
                 <h1 className="mt-2 text-3xl font-semibold">
                     <span className="sr-only">{sense.count} </span>
-                    {text.prefix} <span className={`uppercase ${sense.accent}`}>{text.verb}</span>
+                    {t(`senses.${sense.id}.prefix`, { count: sense.count })}{' '}
+                    <span className={`uppercase ${sense.accent}`}>
+                        {t(`senses.${sense.id}.verb`)}
+                    </span>
                 </h1>
-                <p className="mt-4 max-w-sm text-lg text-slate-700">{text.prompt}</p>
+                <p className="mt-4 max-w-sm text-lg text-slate-700">
+                    {t(`senses.${sense.id}.prompt`)}
+                </p>
                 <p className="mt-2 max-w-sm text-sm text-slate-500">
-                    {t.sense.examplesLabel}: {text.examples}.
+                    {t('sense.examplesLabel')}: {t(`senses.${sense.id}.examples`)}.
                 </p>
 
                 <div
                     className="mt-10 flex flex-wrap justify-center gap-4"
                     role="img"
-                    aria-label={t.sense.circles}
+                    aria-label={t('sense.circles')}
                 >
                     {Array.from({ length: sense.count }, (_, index) => {
                         const timing = {
@@ -118,7 +129,7 @@ export function SenseScreen({ state, dispatch }: SenseScreenProps): React.JSX.El
                         onClick={() => dispatch({ type: 'complete' })}
                         className="rounded-full !py-4 text-lg shadow-lg"
                     >
-                        {t.sense.action}
+                        {t('sense.action')}
                     </Button>
                 )}
                 {settled && (
@@ -126,7 +137,7 @@ export function SenseScreen({ state, dispatch }: SenseScreenProps): React.JSX.El
                         onClick={() => dispatch({ type: 'next' })}
                         className="settle-in rounded-full !py-4 text-lg shadow-lg"
                     >
-                        {isLast ? t.sense.finish : t.sense.next}
+                        {isLast ? t('sense.finish') : t('sense.next')}
                     </Button>
                 )}
             </footer>

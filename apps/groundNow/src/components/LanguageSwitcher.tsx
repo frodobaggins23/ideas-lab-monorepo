@@ -1,13 +1,14 @@
-import { useI18n } from '@/i18n/context';
-import { LANGUAGES } from '@/i18n/language';
+import { useTranslation } from 'react-i18next';
+
+import { LANGUAGES } from '@/i18n/i18n';
 
 export function LanguageSwitcher(): React.JSX.Element {
-    const { language, setLanguage, t } = useI18n();
+    const { t, i18n } = useTranslation();
 
     return (
         <div
             role="group"
-            aria-label={t.languageLabel}
+            aria-label={t('languageLabel')}
             className="flex rounded-full bg-white/50 p-0.5 text-xs font-semibold text-slate-600"
         >
             {LANGUAGES.map((code) => (
@@ -15,10 +16,10 @@ export function LanguageSwitcher(): React.JSX.Element {
                     key={code}
                     type="button"
                     lang={code}
-                    aria-pressed={code === language}
-                    onClick={() => setLanguage(code)}
+                    aria-pressed={code === i18n.resolvedLanguage}
+                    onClick={() => void i18n.changeLanguage(code)}
                     className={`rounded-full px-3 py-1.5 uppercase focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 ${
-                        code === language ? 'bg-slate-700 text-white' : ''
+                        code === i18n.resolvedLanguage ? 'bg-slate-700 text-white' : ''
                     }`}
                 >
                     {code}
