@@ -1,10 +1,12 @@
 import './styles/index.css';
-import '@/i18n/i18n';
 
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { App } from './App';
+import { initI18n } from './i18n/i18n';
+
+initI18n();
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

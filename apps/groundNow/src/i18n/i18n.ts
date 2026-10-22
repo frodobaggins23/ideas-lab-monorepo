@@ -34,11 +34,14 @@ export function createI18n(): i18n {
     return instance;
 }
 
-export const appI18n = createI18n();
-
 function syncDocumentLanguage(language: string): void {
     document.documentElement.lang = language;
 }
 
-syncDocumentLanguage(appI18n.resolvedLanguage ?? 'en');
-appI18n.on('languageChanged', syncDocumentLanguage);
+/** Call once before rendering: react-i18next keeps the instance globally, so no provider is needed. */
+export function initI18n(): i18n {
+    const instance = createI18n();
+    syncDocumentLanguage(instance.resolvedLanguage ?? 'en');
+    instance.on('languageChanged', syncDocumentLanguage);
+    return instance;
+}
