@@ -22,6 +22,10 @@ Input: `appName`. Rules for what the agent may do on its own are in the root `CL
 5. **Preview URL:** `npm run lab:deployment -- <appName>` (run it in the background; it waits up
    to 15 minutes) waits for the deployment of the pushed commit and prints `READY <url>`. On
    `ERROR` it prints the build log: fix the cause and push again. `CANCELED` means Vercel skipped
-   the build because nothing in the app changed. Add the URL to the PR.
+   the build because nothing in the app changed. `NO_DEPLOYMENT` means the branch has no
+   deployment at all, usually because the push came before the project existed: run step 3 and
+   push again. Add the URL to the PR.
+   To see what Vercel did (any state, any commit), run `npm run lab:vercel-status -- <appName>`.
+   Do not query the Vercel API by hand.
 6. Run `inspect-app` against the preview URL. Report the PR link, the preview URL and what was not
    verified.

@@ -13,8 +13,10 @@ Input: a URL, or an `appName` to run locally. The browser is limited to localhos
    Then start the static server as a background command, exactly this text (no `cd`, redirects,
    variables or changes to it):
    `npx serve -s .preview -l tcp://127.0.0.1:5173 -c ../tools/serve.json --no-compression --no-clipboard`
-   and wait until `http://127.0.0.1:5173` answers. It must match the user's `excludedCommands`
-   entry exactly; started any other way it stays inside the sandbox, where the browser cannot
+   and check that it is up by opening `http://127.0.0.1:5173` with the Playwright MCP. Do not
+   check with `curl` or similar: every sandboxed command has its own loopback, so it never sees
+   the server. It must match the user's `excludedCommands` entry exactly; started any other way
+   (for example wrapped in `nohup` or `&`) it stays inside the sandbox, where the browser cannot
    reach it. It serves only the built files, so a rebuild into `.preview` is needed to see changes.
    **Deployed:** use the preview URL.
 2. Open the page with the Playwright MCP, take a snapshot and a screenshot, and check:
@@ -27,5 +29,5 @@ Input: a URL, or an `appName` to run locally. The browser is limited to localhos
       `.playwright-mcp/` is gitignored.
 3. Look at the screenshot yourself and judge basic layout and legibility. Visual taste is the
    user's call; report what you saw, not that it is "good".
-4. Stop the server when done (stop the background task, then check that `http://127.0.0.1:5173`
-   no longer answers, because `npx` can leave its child process running). Report findings and fix what is yours to fix.
+4. Stop the server when done (stop the background task, then check with the Playwright MCP that
+   `http://127.0.0.1:5173` no longer answers, because `npx` can leave its child process running). Report findings and fix what is yours to fix.
