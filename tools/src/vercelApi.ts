@@ -19,12 +19,20 @@ export interface VercelDeployment {
     meta?: { githubCommitSha?: string };
 }
 
+export interface VercelDeploymentSummary extends VercelDeployment {
+    createdAt: number;
+    branch?: string;
+    errorMessage?: string;
+}
+
 // The deployment list endpoint names the id `uid`, unlike the other endpoints.
 interface RawDeployment {
     uid: string;
     url: string;
+    created: number;
     readyState: VercelDeploymentState;
-    meta?: { githubCommitSha?: string };
+    errorMessage?: string;
+    meta?: { githubCommitSha?: string; githubCommitRef?: string };
 }
 
 export interface VercelDeploymentEvent {
@@ -64,6 +72,7 @@ export interface VercelClient {
     makePreviewsPublic(projectId: string): Promise<void>;
     updateIgnoreBuildCommand(projectId: string, command: string): Promise<void>;
     getLatestDeployment(projectId: string, branch: string): Promise<VercelDeployment | undefined>;
+    listDeployments(projectId: string, limit: number): Promise<VercelDeploymentSummary[]>;
     getDeploymentEvents(deploymentId: string): Promise<VercelDeploymentEvent[]>;
 }
 
@@ -149,6 +158,22 @@ export function createVercelClient(options: VercelClientOptions): VercelClient {
                 readyState: latest.readyState,
                 meta: { githubCommitSha: latest.meta?.githubCommitSha },
             };
+        },
+        async listDeployments(projectId, limit) {
+            const { deployments } = await request<{ deployments: RawDeployment[] }>(
+                'GET',
+                '/v6/deployments',
+                { projectId, limit: String(limit) },
+            );
+            return deployments.map((deployment) => ({
+                id: deployment.uid,
+                url: deployment.url,
+                readyState: deployment.readyState,
+                createdAt: deployment.created,
+                branch: deployment.meta?.githubCommitRef,
+                errorMessage: deployment.errorMessage,
+                meta: { githubCommitSha: deployment.meta?.githubCommitSha },
+            }));
         },
         getDeploymentEvents(deploymentId) {
             return request<VercelDeploymentEvent[]>(

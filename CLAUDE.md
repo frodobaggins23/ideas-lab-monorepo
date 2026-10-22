@@ -119,9 +119,13 @@ integration from `apps/<appName>`. Previews are public. Create the project with
   token format on the client and rejects the placeholder before sending anything. The REST API
   works with the placeholder. Setup notes: `docs/agentSetup/vercel.md`.
 - **The helper is deliberately minimal and must be maintained.** It only covers deploying an app:
-  check a project exists, create it, make previews public, read the latest deployment of a
-  branch, read build events. It pins endpoint versions in the path (`/v9`, `/v11`, ...). When
-  Vercel changes or retires one, update the helper and its tests.
+  check a project exists, create it, make previews public, keep its ignore-build command current,
+  read the latest deployment of a branch, list recent deployments, read build events. It pins
+  endpoint versions in the path (`/v9`, `/v11`, ...). When Vercel changes or retires one, update
+  the helper and its tests.
+- **To see what Vercel did, run `npm run lab:vercel-status -- <appName>`**: recent deployments with
+  commit, state and error, plus the end of the build log when the newest one failed. Do not query
+  the API by hand for this.
 - **Do not grow it speculatively.** Add an API call only when the deploy flow needs it, with a
   test first.
 - **Any other Vercel operation (anything the CLI does that the helper does not, such as deleting a

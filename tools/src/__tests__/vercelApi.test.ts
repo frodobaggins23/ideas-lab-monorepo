@@ -137,6 +137,57 @@ describe('createVercelClient', () => {
         });
     });
 
+    it('lists the most recent deployments of a project across branches', async () => {
+        const { calls, fetchFn } = setup([
+            jsonResponse({
+                deployments: [
+                    {
+                        uid: 'dpl_2',
+                        url: 'b.vercel.app',
+                        created: 1792560422750,
+                        readyState: 'ERROR',
+                        errorMessage: 'Command "npx nx build x" exited with 1',
+                        meta: { githubCommitSha: 'def456', githubCommitRef: 'feat/a' },
+                    },
+                    {
+                        uid: 'dpl_1',
+                        url: 'a.vercel.app',
+                        created: 1792533238934,
+                        readyState: 'READY',
+                        meta: { githubCommitSha: 'abc123', githubCommitRef: 'main' },
+                    },
+                ],
+            }),
+        ]);
+        const client = createVercelClient({ token: 't', fetchFn });
+
+        const deployments = await client.listDeployments('prj_1', 10);
+
+        expect(calls[0]?.url).toBe(
+            'https://api.vercel.com/v6/deployments?projectId=prj_1&limit=10',
+        );
+        expect(deployments).toEqual([
+            {
+                id: 'dpl_2',
+                url: 'b.vercel.app',
+                readyState: 'ERROR',
+                createdAt: 1792560422750,
+                branch: 'feat/a',
+                errorMessage: 'Command "npx nx build x" exited with 1',
+                meta: { githubCommitSha: 'def456' },
+            },
+            {
+                id: 'dpl_1',
+                url: 'a.vercel.app',
+                readyState: 'READY',
+                createdAt: 1792533238934,
+                branch: 'main',
+                errorMessage: undefined,
+                meta: { githubCommitSha: 'abc123' },
+            },
+        ]);
+    });
+
     it('fetches build events for a deployment', async () => {
         const { calls, fetchFn } = setup([jsonResponse([{ type: 'stdout', text: 'building' }])]);
         const client = createVercelClient({ token: 't', fetchFn });
