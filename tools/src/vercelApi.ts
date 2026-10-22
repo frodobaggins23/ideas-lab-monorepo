@@ -19,6 +19,14 @@ export interface VercelDeployment {
     meta?: { githubCommitSha?: string };
 }
 
+// The deployment list endpoint names the id `uid`, unlike the other endpoints.
+interface RawDeployment {
+    uid: string;
+    url: string;
+    readyState: VercelDeploymentState;
+    meta?: { githubCommitSha?: string };
+}
+
 export interface VercelDeploymentEvent {
     type: string;
     text?: string;
@@ -126,12 +134,21 @@ export function createVercelClient(options: VercelClientOptions): VercelClient {
             });
         },
         async getLatestDeployment(projectId, branch) {
-            const { deployments } = await request<{ deployments: VercelDeployment[] }>(
+            const { deployments } = await request<{ deployments: RawDeployment[] }>(
                 'GET',
                 '/v6/deployments',
                 { projectId, branch, limit: '1' },
             );
-            return deployments[0];
+            const latest = deployments[0];
+            if (!latest) {
+                return undefined;
+            }
+            return {
+                id: latest.uid,
+                url: latest.url,
+                readyState: latest.readyState,
+                meta: { githubCommitSha: latest.meta?.githubCommitSha },
+            };
         },
         getDeploymentEvents(deploymentId) {
             return request<VercelDeploymentEvent[]>(

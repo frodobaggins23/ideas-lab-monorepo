@@ -91,9 +91,19 @@ describe('createVercelClient', () => {
     });
 
     it('returns the latest deployment of a branch, or undefined when there is none', async () => {
+        // Shape of a real /v6/deployments item: the id field is called `uid` there.
         const { calls, fetchFn } = setup([
             jsonResponse({
-                deployments: [{ id: 'dpl_1', url: 'a.vercel.app', readyState: 'READY' }],
+                deployments: [
+                    {
+                        uid: 'dpl_1',
+                        name: 'lab-budget-buddy',
+                        url: 'a.vercel.app',
+                        state: 'CANCELED',
+                        readyState: 'CANCELED',
+                        meta: { githubCommitSha: 'abc123', githubCommitRef: 'feat/budgetBuddy' },
+                    },
+                ],
             }),
             jsonResponse({ deployments: [] }),
         ]);
@@ -102,7 +112,12 @@ describe('createVercelClient', () => {
         const latest = await client.getLatestDeployment('prj_1', 'feat/budgetBuddy');
         const none = await client.getLatestDeployment('prj_1', 'feat/other');
 
-        expect(latest?.id).toBe('dpl_1');
+        expect(latest).toEqual({
+            id: 'dpl_1',
+            url: 'a.vercel.app',
+            readyState: 'CANCELED',
+            meta: { githubCommitSha: 'abc123' },
+        });
         expect(none).toBeUndefined();
         expect(calls[0]?.url).toBe(
             'https://api.vercel.com/v6/deployments?projectId=prj_1&branch=feat%2FbudgetBuddy&limit=1',
