@@ -27,7 +27,8 @@ describe('scaffoldApp', () => {
             '{ "name": "@lab/budget-buddy" }',
         );
         expect(readFileSync(join(created, 'src', 'App.tsx'), 'utf8')).toBe('<h1>Budget Buddy</h1>');
-        expect(existsSync(join(created, '.env.example'))).toBe(true);
+        expect(existsSync(join(created, 'env.example'))).toBe(true);
+        expect(existsSync(join(created, '.env.example'))).toBe(false);
     });
 
     it('refuses to overwrite an existing app', () => {

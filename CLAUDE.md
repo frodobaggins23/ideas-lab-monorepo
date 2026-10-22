@@ -138,8 +138,10 @@ integration from `apps/<appName>`. Previews are public. Create the project with
   cannot create Unix sockets in the sandbox.
 - Node's `fetch` ignores the sandbox proxy. Run scripts that call the network with
   `NODE_USE_ENV_PROXY=1` (the `lab:*` npm scripts already do).
-- Existing `.env*` files are masked and unreadable. Template env files are stored as `env.example`
-  and written out as `.env.example`.
+- **Override of "provide `.env.example`":** env templates are named `env.example` (no leading dot),
+  in the repo root and in every app. The sandbox replaces every `.env*` file with an empty device,
+  and a tracked one breaks git (status, stash, checkout and the commit hook), so all `.env*` files
+  are gitignored and none may be tracked. Real values go in `.env.local`.
 - Each sandboxed command has a private loopback, so a server started in the sandbox cannot be
   reached by the Playwright MCP browser (which runs outside it). To inspect an app locally, build
   it into the fixed folder `.preview` (`npm run build -w @lab/<kebab-name> -- --outDir
