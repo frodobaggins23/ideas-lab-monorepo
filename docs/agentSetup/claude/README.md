@@ -33,27 +33,26 @@ Also in `~/.claude/settings.json`:
 
 ## Pushing from the sandbox
 
-The agent commits and pushes inside the sandbox, so git hooks (which run repo code such as tests)
-stay sandboxed too. The `env` block in `settings.json` makes git use `gh` for credentials and
-push over HTTPS even though `origin` is SSH. It sets this through environment variables because
-the sandbox cannot write `.git/config` or `~/.gitconfig`, and it only affects Claude Code's
-commands, not your terminal.
+The agent pushes with `npm run lab:push`, never with `git push`.
 
-1. In `~/.claude/settings.json`, let the proxy inject the GitHub token for `github.com` (git)
-   as well as `api.github.com` (`gh`), in `sandbox.credentials.envVars`:
-
-    ```json
-    { "name": "GH_TOKEN", "mode": "mask", "injectHosts": ["api.github.com", "github.com"] }
-    ```
-
-2. Remove any `git` command from `sandbox.excludedCommands`. A git command run outside the sandbox
-   also runs the repo's hooks (`.husky/`, which runs `nx` and the tests) with your full rights.
-3. Restart the host application, then ask Claude to run `git push --dry-run origin HEAD`. It
-   authenticates but changes nothing.
-
-If step 3 fails with `Invalid username or token`, the proxy does not replace the token inside
-git's Basic auth header (git sends it base64-encoded). Then pushing stays with you until that is
-solved. Do not fall back to excluding `git push` from the sandbox: see above.
+- **Why not `git push`:** git sends `GH_TOKEN` base64-encoded in a Basic auth header, and the
+  proxy only replaces the masked placeholder where it appears as plain text, so GitHub receives
+  the placeholder (tested 2026-10-22). Do not exclude `git push` from the sandbox instead: a git
+  command run outside the sandbox also runs the repo hooks (`.husky/`, which runs `nx` and the
+  tests) with your full rights.
+- **How `lab:push` works:** it first runs `.husky/pre-push` inside the sandbox. Then
+  `tools/src/pushBranch.ts` recreates each new local commit through the GitHub Git Data API on
+  `api.github.com`, where the proxy does inject the token. It moves the branch only after every
+  recreated commit came back with its exact local id, so GitHub holds exactly the local history.
+  It refuses the default branch, anything that is not a fast-forward, signed commits and
+  submodule changes.
+- **Setup:** mask `GH_TOKEN` in `~/.claude/settings.json` with `injectHosts: ["api.github.com"]`,
+  and add the allow rule `Bash(npm run lab:push)` to `.claude/settings.json` or
+  `.claude/settings.local.json` yourself. Without it, auto mode stops the command as a sandbox
+  bypass. The template does not contain the rule on purpose: adding it is your review of the
+  tool, and auto mode does not let the agent grant it to itself.
+- **Fetching stays with you:** `git fetch` and `git pull` use SSH, which the sandbox cannot reach.
+  For a new branch, `lab:push` needs the current head of `main` in your local repository.
 
 Use a fine-grained token for `GH_TOKEN` that covers only this repository, with read and write on
 Contents and Pull requests. On GitHub, add a ruleset for `main` that requires a pull request and
@@ -64,8 +63,9 @@ never force-push" no longer depends on the agent following instructions.
 
 - The `Edit(...)` deny rules in `settings.json` protect the files that the security setup itself
   depends on: Claude Code settings and skills, git hooks, `.npmrc`, the `serve` config and the
-  dependency allowlist. The sandbox alone does not cover them: Claude's file tools are bound by
-  permission rules, not by the sandbox, and once wrote into `.claude/skills/`.
+  dependency allowlist. Claude's file tools are bound by permission rules, not by the sandbox,
+  and once wrote into `.claude/skills/`. The same rules also make these paths read-only for
+  sandboxed commands (tested 2026-10-22).
 - A `Read(**/.env.*)` deny rule wins over any `allow` rule, `Read(**/.env.example)` included.
   That is why env templates are named `env.example` and every `.env*` file is gitignored.
 - Hooks in `settings.json` and `settings.local.json` run outside the sandbox. Never point a hook at

@@ -68,7 +68,9 @@ discoverable (sitemaps, canonical or Open Graph URLs for search).
 
 - **Override of "never commit or push unless asked":** the agent may, without asking, create a
   branch `feat/<appName>` or `fix/<appName>-<topic>`, commit there (Conventional Commits, hooks
-  must pass), push that branch and open a **draft** PR with `gh`.
+  must pass), push that branch and open a **draft** PR with `gh`. Push only with
+  `npm run lab:push`: `git push` cannot authenticate from the sandbox, and fetching stays with
+  the user (see `docs/agentSetup/claude/README.md`).
 - Still forbidden without being asked: committing to `main`, force-push, `--no-verify`, merging or
   closing PRs, deleting branches.
 - PR title is a Conventional Commit. PR body: the idea in a few lines, the preview URL, which checks
