@@ -10,6 +10,18 @@ cp docs/agentSetup/claude/mcp.json .mcp.json
 # merge docs/agentSetup/claude/settings.json into .claude/settings.json (do not overwrite it)
 ```
 
+Re-run the `cp` of the skills after every change to `docs/agentSetup/claude/skills/`. The agent
+can only edit these templates, and nothing warns when the live copies in `.claude/skills/` fall
+behind: an outdated `ship-app` once made it create the Vercel project after the push, so no
+preview was ever built. Check for drift with:
+
+```sh
+diff -r docs/agentSetup/claude/skills .claude/skills
+```
+
+`.claude/settings.json` is the shared project file and is committed. Personal or experimental
+settings go in `.claude/settings.local.json`, which is gitignored.
+
 Also in `~/.claude/settings.json`:
 
 - `sandbox.network.allowedDomains`: add `api.npmjs.org` (download counts) and
@@ -18,6 +30,52 @@ Also in `~/.claude/settings.json`:
 - `sandbox.excludedCommands`: add exactly
   `npx serve -s .preview -l tcp://127.0.0.1:5173 -c ../tools/serve.json --no-compression --no-clipboard`
   (no wildcard) so the Playwright browser can reach a local build.
+
+## Pushing from the sandbox
+
+The agent commits and pushes inside the sandbox, so git hooks (which run repo code such as tests)
+stay sandboxed too. The `env` block in `settings.json` makes git use `gh` for credentials and
+push over HTTPS even though `origin` is SSH. It sets this through environment variables because
+the sandbox cannot write `.git/config` or `~/.gitconfig`, and it only affects Claude Code's
+commands, not your terminal.
+
+1. In `~/.claude/settings.json`, let the proxy inject the GitHub token for `github.com` (git)
+   as well as `api.github.com` (`gh`), in `sandbox.credentials.envVars`:
+
+    ```json
+    { "name": "GH_TOKEN", "mode": "mask", "injectHosts": ["api.github.com", "github.com"] }
+    ```
+
+2. Remove any `git` command from `sandbox.excludedCommands`. A git command run outside the sandbox
+   also runs the repo's hooks (`.husky/`, which runs `nx` and the tests) with your full rights.
+3. Restart the host application, then ask Claude to run `git push --dry-run origin HEAD`. It
+   authenticates but changes nothing.
+
+If step 3 fails with `Invalid username or token`, the proxy does not replace the token inside
+git's Basic auth header (git sends it base64-encoded). Then pushing stays with you until that is
+solved. Do not fall back to excluding `git push` from the sandbox: see above.
+
+Use a fine-grained token for `GH_TOKEN` that covers only this repository, with read and write on
+Contents and Pull requests. On GitHub, add a ruleset for `main` that requires a pull request and
+blocks force-pushes and deletion, with yourself as a bypass actor. Then "never push to `main`,
+never force-push" no longer depends on the agent following instructions.
+
+## Permission rules
+
+- The `Edit(...)` deny rules in `settings.json` protect the files that the security setup itself
+  depends on: Claude Code settings and skills, git hooks, `.npmrc`, the `serve` config and the
+  dependency allowlist. The sandbox alone does not cover them: Claude's file tools are bound by
+  permission rules, not by the sandbox, and once wrote into `.claude/skills/`.
+- A `Read(**/.env.*)` deny rule wins over any `allow` rule, `Read(**/.env.example)` included.
+  That is why env templates are named `env.example` and every `.env*` file is gitignored.
+- Hooks in `settings.json` and `settings.local.json` run outside the sandbox. Never point a hook at
+  a script inside the repo: the agent can write there, so it could run its own code unsandboxed.
+  Put hook scripts in `~/.claude/hooks/`.
+
+## Vercel dashboard
+
+"Redeploy" on a deployment rebuilds that deployment's commit, not the newest commit of the branch.
+To deploy a fix, redeploy the deployment of the fix commit, or push again.
 
 ## Dependency gate
 

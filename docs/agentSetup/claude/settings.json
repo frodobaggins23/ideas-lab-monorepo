@@ -1,6 +1,12 @@
 {
     "env": {
-        "NX_ISOLATE_PLUGINS": "false"
+        "NX_ISOLATE_PLUGINS": "false",
+        "GH_REPO": "frodobaggins23/ideas-lab-monorepo",
+        "GIT_CONFIG_COUNT": "2",
+        "GIT_CONFIG_KEY_0": "credential.https://github.com.helper",
+        "GIT_CONFIG_VALUE_0": "!gh auth git-credential",
+        "GIT_CONFIG_KEY_1": "url.https://github.com/.pushInsteadOf",
+        "GIT_CONFIG_VALUE_1": "git@github.com:"
     },
     "permissions": {
         "allow": ["mcp__playwright"],
@@ -18,7 +24,12 @@
             "Bash(npm isntal *)",
             "Bash(npm isntall *)",
             "Bash(npm it *)",
-            "Bash(npm install-test *)"
+            "Bash(npm install-test *)",
+            "Edit(/.claude/**)",
+            "Edit(/.husky/**)",
+            "Edit(/.npmrc)",
+            "Edit(/tools/serve.json)",
+            "Edit(/tools/dependencyAllowlist.json)"
         ]
     }
 }
