@@ -1,0 +1,61 @@
+import type { Messages } from './messages';
+
+export const en: Messages = {
+    intro: {
+        title: 'You are here. You are safe enough.',
+        body: 'Let’s bring your attention back to the present, one sense at a time. It takes about two minutes.',
+        note: 'There are no right answers. Approximate is perfectly fine, and you never need to repeat a step.',
+        begin: 'Begin grounding',
+    },
+    sense: {
+        back: '← Back',
+        step: (current, total) => `Step ${current} of ${total}`,
+        examplesLabel: 'For example',
+        hint: 'Take your time. Tap when you have noticed them.',
+        action: 'I’m noticing them',
+        breathing: 'Breathe in… and out.',
+        settled: 'Lovely. Stay here for a moment.',
+        next: 'Next sense',
+        finish: 'Finish',
+        circles: 'Noticed items',
+    },
+    done: {
+        title: 'You’re back in the present.',
+        body: 'Thoughts may still be around, and that’s okay. You don’t have to push them away or solve them. Carry on with what matters to you.',
+        note: 'If it feels overwhelming, consider reaching out to a therapist or someone you trust.',
+        restart: 'Back to start',
+    },
+    languageLabel: 'Language',
+    senses: {
+        see: {
+            prefix: 'things you can',
+            verb: 'see',
+            prompt: 'Look around slowly. Find things you can see.',
+            examples: 'a mug, a shadow, a blue book, your shoe',
+        },
+        touch: {
+            prefix: 'things you can',
+            verb: 'touch',
+            prompt: 'Notice what your body feels right now.',
+            examples: 'your jeans, a cool desk, feet on the floor',
+        },
+        hear: {
+            prefix: 'things you can',
+            verb: 'hear',
+            prompt: 'Listen closely. Let the sounds come to you.',
+            examples: 'a humming fridge, birds, your own breathing',
+        },
+        smell: {
+            prefix: 'things you can',
+            verb: 'smell',
+            prompt: 'Breathe in gently. Notice any scent.',
+            examples: 'coffee, soap, old paper, a piece of clothing',
+        },
+        taste: {
+            prefix: 'thing you can',
+            verb: 'taste',
+            prompt: 'Notice any taste in your mouth, or take a sip of water.',
+            examples: 'mint, coffee, water',
+        },
+    },
+};
