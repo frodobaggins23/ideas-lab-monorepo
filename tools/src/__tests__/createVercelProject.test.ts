@@ -65,9 +65,11 @@ function fakeClient(existing?: VercelProject) {
         getProject: vi.fn(async () => existing),
         createProject: vi.fn(async () => created),
         makePreviewsPublic: vi.fn(async () => {}),
+        updateIgnoreBuildCommand: vi.fn(async () => {}),
     } satisfies Partial<VercelClient> as unknown as VercelClient & {
         createProject: ReturnType<typeof vi.fn>;
         makePreviewsPublic: ReturnType<typeof vi.fn>;
+        updateIgnoreBuildCommand: ReturnType<typeof vi.fn>;
     };
 }
 
@@ -90,7 +92,7 @@ describe('ensureLabProject', () => {
         expect(client.makePreviewsPublic).toHaveBeenCalledWith('prj_new');
     });
 
-    it('does nothing when the project already exists', async () => {
+    it('does not recreate an existing project, but keeps its ignore-build command in sync', async () => {
         const existing = { id: 'prj_old', name: 'lab-budget-buddy' };
         const client = fakeClient(existing);
 
@@ -99,6 +101,7 @@ describe('ensureLabProject', () => {
         expect(result).toEqual({ created: false, project: existing });
         expect(client.createProject).not.toHaveBeenCalled();
         expect(client.makePreviewsPublic).not.toHaveBeenCalled();
+        expect(client.updateIgnoreBuildCommand).toHaveBeenCalledWith('prj_old', ignoreBuildCommand);
     });
 
     it('rejects an invalid app name before calling the API', async () => {

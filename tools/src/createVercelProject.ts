@@ -28,6 +28,7 @@ export async function ensureLabProject(
 
     const existing = await client.getProject(names.vercelProject);
     if (existing) {
+        await client.updateIgnoreBuildCommand(existing.id, ignoreBuildCommand);
         return { created: false, project: existing };
     }
 

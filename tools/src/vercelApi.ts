@@ -54,6 +54,7 @@ export interface VercelClient {
     getProject(idOrName: string): Promise<VercelProject | undefined>;
     createProject(input: CreateProjectInput): Promise<VercelProject>;
     makePreviewsPublic(projectId: string): Promise<void>;
+    updateIgnoreBuildCommand(projectId: string, command: string): Promise<void>;
     getLatestDeployment(projectId: string, branch: string): Promise<VercelDeployment | undefined>;
     getDeploymentEvents(deploymentId: string): Promise<VercelDeploymentEvent[]>;
 }
@@ -117,6 +118,11 @@ export function createVercelClient(options: VercelClientOptions): VercelClient {
         async makePreviewsPublic(projectId) {
             await request('PATCH', `/v9/projects/${encodeURIComponent(projectId)}`, undefined, {
                 ssoProtection: null,
+            });
+        },
+        async updateIgnoreBuildCommand(projectId, command) {
+            await request('PATCH', `/v9/projects/${encodeURIComponent(projectId)}`, undefined, {
+                commandForIgnoringBuildStep: command,
             });
         },
         async getLatestDeployment(projectId, branch) {

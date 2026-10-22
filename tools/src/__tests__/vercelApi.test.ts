@@ -109,6 +109,19 @@ describe('createVercelClient', () => {
         );
     });
 
+    it('updates the ignore-build-step command on an existing project', async () => {
+        const { calls, fetchFn } = setup([jsonResponse({ id: 'prj_1' })]);
+        const client = createVercelClient({ token: 't', fetchFn });
+
+        await client.updateIgnoreBuildCommand('prj_1', 'npx nx ...');
+
+        expect(calls[0]?.init.method).toBe('PATCH');
+        expect(calls[0]?.url).toBe('https://api.vercel.com/v9/projects/prj_1');
+        expect(JSON.parse(String(calls[0]?.init.body))).toEqual({
+            commandForIgnoringBuildStep: 'npx nx ...',
+        });
+    });
+
     it('fetches build events for a deployment', async () => {
         const { calls, fetchFn } = setup([jsonResponse([{ type: 'stdout', text: 'building' }])]);
         const client = createVercelClient({ token: 't', fetchFn });
