@@ -15,7 +15,11 @@ Input: `appName`. Rules for what the agent may do on its own are in the root `CL
 3. **Vercel project** (first ship only, before the first push: Vercel deploys only pushes made
    after the project exists): `npm run lab:vercel-project -- <appName>`. It is idempotent. Any
    other Vercel operation is the user's to run outside the sandbox: tell them the command.
-4. **Push** the branch and open a **draft** PR with `gh pr create --draft` (or push to the existing PR).
+4. **Push** with `npm run lab:push`, never `git push`, which cannot authenticate from the sandbox
+   (see "Pushing from the sandbox" in `docs/agentSetup/claude/README.md`). It runs the pre-push
+   tests, then pushes the current branch. If it refuses (not a fast-forward, missing `main`
+   head, signed commit), report its message to the user; do not try another way to push.
+   Then open a **draft** PR with `gh pr create --draft` (or update the existing PR).
    Body: the idea, preview URL (fill in below), checks run with results, Assumptions, new
    dependencies added through `lab:add` (and any package the user installed themselves after a
    failed check, with the failed check), open questions.
