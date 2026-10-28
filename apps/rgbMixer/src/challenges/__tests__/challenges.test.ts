@@ -6,30 +6,41 @@ import { type CardKind, type Ingredient, mixIngredients, wayKey } from '@/mixing
 import { nameLight } from '@/mixing/colorNames';
 import { isSameLight, LEVELS } from '@/mixing/light';
 
-function subsets(kinds: CardKind[]): CardKind[][] {
-    return kinds.reduce<CardKind[][]>(
-        (all, kind) => [...all, ...all.map((subset) => [...subset, kind])],
-        [[]],
+/** Every pick of two or more cards, e.g. red + green, red + blue, red + green + blue. */
+function cardCombinations(kinds: CardKind[]): CardKind[][] {
+    let combinations: CardKind[][] = [[]];
+    for (const kind of kinds) {
+        const withKind = combinations.map((combination) => [...combination, kind]);
+        combinations = [...combinations, ...withKind];
+    }
+    return combinations.filter((combination) => combination.length >= 2);
+}
+
+/** Every brightness setting of the cards, e.g. red 25% + green 25%, red 25% + green 50%, ... */
+function brightnessSettings(kinds: CardKind[]): Ingredient[][] {
+    let recipes: Ingredient[][] = [[]];
+    for (const kind of kinds) {
+        const longer: Ingredient[][] = [];
+        for (const recipe of recipes) {
+            for (const level of LEVELS) {
+                longer.push([...recipe, { kind, level }]);
+            }
+        }
+        recipes = longer;
+    }
+    return recipes;
+}
+
+function canMake(challenge: Challenge, kinds: CardKind[]): boolean {
+    return brightnessSettings(kinds).some((recipe) =>
+        isSameLight(mixIngredients(recipe), challenge.target),
     );
 }
 
-function levelChoices(kinds: CardKind[]): Ingredient[][] {
-    return kinds.reduce<Ingredient[][]>(
-        (all, kind) => all.flatMap((chosen) => LEVELS.map((level) => [...chosen, { kind, level }])),
-        [[]],
-    );
-}
-
-/** Every combination of two or more cards that can produce the target at some brightness. */
+/** The card combinations that can produce the target at some brightness. */
 function solvableWays(challenge: Challenge): string[] {
-    return subsets(challenge.kinds)
-        .filter((subset) => subset.length >= 2)
-        .filter((subset) =>
-            levelChoices(subset).some((recipe) =>
-                isSameLight(mixIngredients(recipe), challenge.target),
-            ),
-        )
-        .map(wayKey);
+    const ways = cardCombinations(challenge.kinds).filter((kinds) => canMake(challenge, kinds));
+    return ways.map(wayKey);
 }
 
 describe('CHALLENGES', () => {
