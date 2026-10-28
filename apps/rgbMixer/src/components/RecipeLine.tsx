@@ -43,7 +43,7 @@ export function RecipeLine({ ingredients }: { ingredients: Ingredient[] }): Reac
                     <IngredientChip ingredient={ingredient} />
                 </span>
             ))}
-            <span className="inline-flex items-center gap-1.5 font-semibold">
+            <span className="mt-1 inline-flex items-center gap-1.5 font-semibold sm:mt-0">
                 <Operator symbol="=" />
                 <Swatch light={light} className="h-5 w-5" />
                 {describeLight(light)}
