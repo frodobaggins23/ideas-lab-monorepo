@@ -1,0 +1,27 @@
+@import 'tailwindcss';
+@source '../../../../libs/ui/src';
+
+body {
+    @apply bg-stone-50 text-slate-900;
+}
+
+/* Gentle bob so the pilgrim looks like it is walking. */
+@keyframes pilgrim-walk {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-4px);
+    }
+}
+
+.pilgrim-walk {
+    animation: pilgrim-walk 1.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pilgrim-walk {
+        animation: none;
+    }
+}
