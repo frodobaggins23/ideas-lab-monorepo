@@ -6,7 +6,7 @@ interface PilgrimProps {
 /** A pilgrim with a hat, backpack and staff, standing with the feet on (x, y). */
 export function Pilgrim({ x, y }: PilgrimProps): React.JSX.Element {
     return (
-        <g transform={`translate(${x} ${y}) scale(1.6)`} aria-hidden="true">
+        <g transform={`translate(${x} ${y}) scale(0.85)`} aria-hidden="true">
             <g className="pilgrim-walk">
                 <ellipse cx="0" cy="0" rx="14" ry="4" className="fill-slate-900/20" />
                 {/* staff */}

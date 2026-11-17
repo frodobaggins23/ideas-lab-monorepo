@@ -1,59 +1,114 @@
-import type { Place } from '@/route/caminoRoute';
-import type { RoutePosition } from '@/route/routePosition';
-
 export interface MapPoint {
     x: number;
     y: number;
 }
 
-export interface ProjectedMap {
+export interface GeoBounds {
+    west: number;
+    east: number;
+    south: number;
+    north: number;
+}
+
+export interface MapProjection {
     width: number;
     height: number;
-    points: Map<string, MapPoint>;
+    project: (lat: number, lon: number) => MapPoint;
 }
 
 /**
- * The route runs almost due west, so a true-scale map is a thin strip. North-south distances are
- * stretched to keep the bends visible on a phone.
+ * Equirectangular projection of a small area. The route runs almost due west, so north-south
+ * distances are stretched a little to keep its bends visible on a phone.
  */
-const VERTICAL_STRETCH = 3;
-
-export function projectPlaces(
-    places: readonly Place[],
+export function createProjection(
+    bounds: GeoBounds,
     width: number,
-    padding: number,
-): ProjectedMap {
-    if (places.length === 0) throw new Error('Nothing to project');
-    const lats = places.map((place) => place.lat);
-    const lons = places.map((place) => place.lon);
-    const minLon = Math.min(...lons);
-    const maxLon = Math.max(...lons);
-    const minLat = Math.min(...lats);
-    const maxLat = Math.max(...lats);
-    const lonScale = Math.cos((((minLat + maxLat) / 2) * Math.PI) / 180);
+    verticalStretch = 1,
+): MapProjection {
+    const middleLat = (bounds.north + bounds.south) / 2;
+    const lonScale = Math.cos((middleLat * Math.PI) / 180);
+    const scale = width / ((bounds.east - bounds.west) * lonScale);
+    const height = (bounds.north - bounds.south) * verticalStretch * scale;
 
-    const spanX = (maxLon - minLon) * lonScale || 1;
-    const scale = (width - 2 * padding) / spanX;
-    const height = (maxLat - minLat) * VERTICAL_STRETCH * scale + 2 * padding;
-
-    const points = new Map<string, MapPoint>();
-    for (const place of places) {
-        points.set(place.id, {
-            x: padding + (place.lon - minLon) * lonScale * scale,
-            y: padding + (maxLat - place.lat) * VERTICAL_STRETCH * scale,
-        });
-    }
-    return { width, height, points };
+    return {
+        width,
+        height,
+        project: (lat, lon) => ({
+            x: (lon - bounds.west) * lonScale * scale,
+            y: (bounds.north - lat) * verticalStretch * scale,
+        }),
+    };
 }
 
-/** Where the pilgrim stands: on the straight line between the last and the next place. */
-export function getPositionPoint(map: ProjectedMap, position: RoutePosition): MapPoint {
-    const from = map.points.get(position.lastPlace.id);
-    if (!from) throw new Error(`Place ${position.lastPlace.id} is not on the map`);
-    const to = position.nextPlace ? map.points.get(position.nextPlace.id) : undefined;
-    if (!to) return from;
+function format(point: MapPoint): string {
+    return `${point.x.toFixed(1)},${point.y.toFixed(1)}`;
+}
+
+function lerp(from: MapPoint, to: MapPoint, t: number): MapPoint {
+    return { x: from.x + (to.x - from.x) * t, y: from.y + (to.y - from.y) * t };
+}
+
+interface CubicSegment {
+    start: MapPoint;
+    control1: MapPoint;
+    control2: MapPoint;
+    end: MapPoint;
+}
+
+function pointAt(points: readonly MapPoint[], index: number): MapPoint {
+    const clamped = Math.min(Math.max(index, 0), points.length - 1);
+    const found = points[clamped];
+    if (!found) throw new Error('A route needs at least one point');
+    return found;
+}
+
+/** Catmull-Rom segment from points[index] to points[index + 1], as a cubic Bézier. */
+function routeSegment(points: readonly MapPoint[], index: number): CubicSegment {
+    const before = pointAt(points, index - 1);
+    const start = pointAt(points, index);
+    const end = pointAt(points, index + 1);
+    const after = pointAt(points, index + 2);
     return {
-        x: from.x + (to.x - from.x) * position.legProgress,
-        y: from.y + (to.y - from.y) * position.legProgress,
+        start,
+        control1: { x: start.x + (end.x - before.x) / 6, y: start.y + (end.y - before.y) / 6 },
+        control2: { x: end.x - (after.x - start.x) / 6, y: end.y - (after.y - start.y) / 6 },
+        end,
     };
+}
+
+/** The first part of a segment, up to t (de Casteljau). */
+function splitSegment(segment: CubicSegment, t: number): CubicSegment {
+    const a = lerp(segment.start, segment.control1, t);
+    const b = lerp(segment.control1, segment.control2, t);
+    const c = lerp(segment.control2, segment.end, t);
+    const d = lerp(a, b, t);
+    const e = lerp(b, c, t);
+    return { start: segment.start, control1: a, control2: d, end: lerp(d, e, t) };
+}
+
+function toCurve(segment: CubicSegment): string {
+    return ` C ${format(segment.control1)} ${format(segment.control2)} ${format(segment.end)}`;
+}
+
+/** A smooth SVG path through all points. */
+export function smoothRoutePath(points: readonly MapPoint[]): string {
+    return walkedRoutePath(points, points.length - 1, 0);
+}
+
+/** The smooth path from the first point to `t` (0..1) of the way after points[index]. */
+export function walkedRoutePath(points: readonly MapPoint[], index: number, t: number): string {
+    let path = `M ${format(pointAt(points, 0))}`;
+    for (let segment = 0; segment < index; segment += 1) {
+        path += toCurve(routeSegment(points, segment));
+    }
+    if (t > 0 && index < points.length - 1) {
+        path += toCurve(splitSegment(routeSegment(points, index), t));
+    }
+    return path;
+}
+
+/** The point on the smooth path `t` (0..1) of the way after points[index]. */
+export function pointOnRoute(points: readonly MapPoint[], index: number, t: number): MapPoint {
+    if (t <= 0 || index >= points.length - 1) return pointAt(points, index);
+    return splitSegment(routeSegment(points, index), t).end;
 }

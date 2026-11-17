@@ -5,6 +5,8 @@ export interface RoutePosition {
     km: number;
     /** Last place reached (Roncesvalles at the start). */
     lastPlace: Place;
+    /** Index of lastPlace in the route. */
+    lastIndex: number;
     /** Next place ahead, or null in Santiago. */
     nextPlace: Place | null;
     /** 0..1 progress between lastPlace and nextPlace. */
@@ -24,10 +26,12 @@ export function getRoutePosition(
 
     const km = clampKm(walkedKm);
     let lastPlace = first;
+    let lastIndex = 0;
     let nextPlace: Place | null = null;
-    for (const place of places) {
+    for (const [index, place] of places.entries()) {
         if (place.km <= km) {
             lastPlace = place;
+            lastIndex = index;
         } else {
             nextPlace = place;
             break;
@@ -36,7 +40,7 @@ export function getRoutePosition(
 
     const legLength = nextPlace ? nextPlace.km - lastPlace.km : 0;
     const legProgress = nextPlace && legLength > 0 ? (km - lastPlace.km) / legLength : 0;
-    return { km, lastPlace, nextPlace, legProgress };
+    return { km, lastPlace, lastIndex, nextPlace, legProgress };
 }
 
 export function getReachedPlaces(
